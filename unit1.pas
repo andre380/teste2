@@ -36,7 +36,7 @@ var
   pool:Tpool;
 begin
   pool:=Tpool.Create;
-  pool.add(TActor.Create());
+  pool.add(TActor.Create(nil,nil,nil,pool,'teste'));
   stl1:=TStringList.Create;
   //stl1.SaveToFile();
 
