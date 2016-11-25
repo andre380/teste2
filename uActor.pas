@@ -42,12 +42,15 @@ type
 
   Tpool = class(TList)
   private
+    Fname: string;
     function GetItems(Index: integer): TActor;
     procedure SetItems(Index: integer; AValue: TActor);
   public
+    property name :string read Fname;
     procedure SaveToFile(const FileName: string);
     property Items[Index: integer]: TActor read GetItems write SetItems;
     function add(item:TActor):integer;
+    constructor create(aName:string);
   end;
 
   { Tpools }
@@ -58,7 +61,7 @@ type
     procedure SetItems(Index: integer; AValue: Tpool);
   public
     property Items[Index: integer]: Tpool read GetItems write SetItems;
-    function addnew:Tpool;
+    function addnew(aName:string):Tpool;
   end;
 
 
@@ -77,9 +80,9 @@ begin
  Inherited Items[Index]:=Pointer(AValue);
 end;
 
-function Tpools.addnew: Tpool;
+function Tpools.addnew(aName:string): Tpool;
 begin
-  result:=Tpool.Create;
+  result:=Tpool.Create(aName);
   Inherited add(Result);
 end;
 
@@ -95,23 +98,40 @@ begin
   inherited Items[Index]:=Pointer(AValue);
 end;
 
+
+
 procedure Tpool.SaveToFile(const FileName: string);
 var
-  FRoot:TJSONObject;
+  //FRoot:TJSONObject;
   indiceObjeto, cont:integer;
-  S : String;
+  S , nome: String;
   F : TFileStream;
+  FRoot: TJSONArray;
+  item, jpool: TJSONObject;
+  objeto: TActor;
 begin
-  FRoot:=TJSONObject.Create;
-  for cont:=0 to self.Count-1 do
+  FRoot:=TJSONArray.Create;
+  FRoot.add(TJSONObject.Create);
+  nome:=self.name;
+  TJSONObject(FRoot.Items[0]).Add(nome,TJSONObject.create);
+  jpool:=TJSONObject(FRoot.Items[0].Items[0]);
+  for cont:=1 to self.Count-1 do
   begin
-    indiceObjeto:= FRoot.Add('actor',TJSONObject.Create);
-    TJSONArray(FRoot.Items[0]).Add();
+    objeto:=self.Items[cont];
+    item:=TJSONObject.Create;
+    item.Add('ClassName',objeto.ClassName);
+    item.Add('name',objeto.name);
+    item.Add('acept',objeto.acept.name);
+    item.Add('complain','');
+    item.Add('refuse','');
+    item.Add('choice','');
+    jpool.Add('Actor',item);
   end;
   F:=TFileStream.Create(FileName,fmCreate);
   try
     If Assigned(FRoot) then
       S:=FRoot.AsJSON;
+      FRoot.Free;
     If length(S)>0 then
       F.WriteBuffer(S[1],Length(S));
 //    FModified:=False;
@@ -127,12 +147,18 @@ begin
   inherited add(pointer(item));
 end;
 
+constructor Tpool.create(aName:string);
+begin
+  inherited create;
+  self.Fname:=aName;
+end;
+
 { TActor }
 
 procedure TActor.Setpool(AValue: TList);
 begin
   if Fpool=AValue then Exit;
-  if Fpool.ClassNameIs('Tpool') then
+  if AValue.ClassNameIs('Tpool') then
     Fpool:=AValue
   else raise Exception.create('Invalid class for pool. Tpool is required');
 end;
