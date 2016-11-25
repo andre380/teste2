@@ -10,32 +10,36 @@ type
 
   TChoiceOption = (loDissonant, loConsonant);
   TChoiceOptions = set of TChoiceOption;
-  Tstatus = (stNone,stAcept,stRefuse,stcomplain);
+  Tstatus = (stNone,stAcept,stRefuse,stcompliance);
 
   { TActor }
   TActor = class
   protected
+    FjsonOBJ: TJSONObject;
     Facept: TActor;
-    Fcomplain: TActor;
+    Fcompliance: TActor;
     Fname: string;
     Fpool: TList;
     Frefuse: TActor;
     Fchoice: TActor;
     Fstatus: Tstatus;
+    function getjsonOBJ: TJSONObject;
     procedure Setname(AValue: string);
     procedure Setpool(AValue: TList);
   public
-    constructor Create( Aacept, Acomplain, Arefuse: TActor;Apool:TList;name:string);
+    constructor Create( Aacept, Acompliance, Arefuse: TActor;Apool:TList;name:string);
+    constructor create(AjsonOBJ:TJSONObject;Apool:TList);
     function choose(TendencyOptions:TChoiceOptions):Tstatus;
 
   published
     property name :string read Fname write Setname ;
+    property pool:TList read Fpool write Setpool;
     property acept : TActor read Facept ;
     property refuse : TActor read Frefuse ;
-    property complain : TActor read Fcomplain ;
+    property compliance : TActor read Fcompliance ;
     property choice  : TActor read Fchoice;
     property status : Tstatus read Fstatus;
-    property pool:TList read Fpool write Setpool;
+    property jsonOBJ:TJSONObject read getjsonOBJ;
  end;
 
   { Tpool }
@@ -47,7 +51,8 @@ type
     procedure SetItems(Index: integer; AValue: TActor);
   public
     property name :string read Fname;
-    procedure SaveToFile(const FileName: string);
+    function SaveToFile(FileName: string):Boolean;
+    function LoadFromFile(AFilename:string):Boolean;
     property Items[Index: integer]: TActor read GetItems write SetItems;
     function add(item:TActor):integer;
     constructor create(aName:string);
@@ -100,7 +105,7 @@ end;
 
 
 
-procedure Tpool.SaveToFile(const FileName: string);
+function Tpool.SaveToFile(FileName: string): Boolean;
 var
   //FRoot:TJSONObject;
   indiceObjeto, cont:integer;
@@ -115,17 +120,10 @@ begin
   nome:=self.name;
   TJSONObject(FRoot.Items[0]).Add(nome,TJSONObject.create);
   jpool:=TJSONObject(FRoot.Items[0].Items[0]);
-  for cont:=1 to self.Count-1 do
+  for cont:=0 to self.Count-1 do
   begin
     objeto:=self.Items[cont];
-    item:=TJSONObject.Create;
-    item.Add('ClassName',objeto.ClassName);
-    item.Add('name',objeto.name);
-    item.Add('acept',objeto.acept.name);
-    item.Add('complain','');
-    item.Add('refuse','');
-    item.Add('choice','');
-    jpool.Add('Actor',item);
+    jpool.Add(IntToStr(cont),objeto.jsonOBJ);
   end;
   F:=TFileStream.Create(FileName,fmCreate);
   try
@@ -138,8 +136,39 @@ begin
   finally
     F.Free;
   end;
-  //FFileName:=AFileName;
-  //SetCaption;
+  Result:=true;
+end;
+
+function Tpool.LoadFromFile(AFilename: string): Boolean;
+Var
+  S : TFileStream;
+  P : TJSONParser;
+  Root, jpool: TJSONData;
+  cont: Integer;
+begin
+  S:=TFileStream.Create(AFileName,fmOpenRead);
+  try
+    P:=TJSONParser.Create(S);
+    try
+      P.Strict:=true;
+      Root:=P.Parse;
+    finally
+      P.Free;
+    end;
+  finally
+    S.Free;
+  end;
+  jpool:= Root.Items[0].Items[0];
+  for cont:=0 to jpool.Count - 1 do
+  begin
+    //actor:=TActor.Create();
+    jpool.Items[cont].FindPath('name').AsString;
+    //item.Add('acept',objeto.acept.name);
+    //item.Add('compliance','');
+    //item.Add('refuse','');
+    //item.Add('choice','');
+    //jpool.Add('Actor');
+  end;
 end;
 
 function Tpool.add(item: TActor): integer;
@@ -163,6 +192,32 @@ begin
   else raise Exception.create('Invalid class for pool. Tpool is required');
 end;
 
+function TActor.getjsonOBJ: TJSONObject;
+var
+  str1: String;
+begin
+  if FjsonOBJ<> nil then
+  result:=FjsonOBJ
+  else
+  begin
+    Result:=TJSONObject.Create;
+    Result.Add('name',name);
+    Result.Add('pool',Tpool(pool).name);
+    if Assigned(acept) then
+    str1:=acept.name;
+    str1:=Tpool(acept.pool).name;
+    Result.Add('acept',TJSONObject.Create(['name',Facept.name,'pool',Tpool(Facept.pool).name]));
+    if Assigned(refuse) then
+    Result.Add('refuse',TJSONObject.Create(['name',refuse.name,'pool',Tpool(refuse.pool).name]));
+    if Assigned(compliance) then
+    Result.Add('compliance',TJSONObject.Create(['name',compliance.name,'pool',Tpool(compliance.pool).name]));
+    if Assigned(choice) then
+    Result.Add('choice',TJSONObject.Create(['name',choice.name,'pool',Tpool(choice.pool).name]));
+  end;
+end;
+
+
+
 procedure TActor.Setname(AValue: string);
 begin
   if Fname=AValue then Exit;
@@ -170,21 +225,28 @@ begin
     Fname:=AValue;
 end;
 
-constructor TActor.Create(Aacept, Acomplain, Arefuse: TActor;Apool:TList;name:string);
+constructor TActor.Create(Aacept, Acompliance, Arefuse: TActor;Apool:TList;name:string);
 begin
   Facept:= Aacept;
-  Fcomplain:= Acomplain;
+  Fcompliance:= Acompliance;
   Frefuse:= Arefuse;
-  Fchoice:=self;
+  //Fchoice:=self;
   Fname:=name;
   if Length(name) = 0 then raise Exception.create('TActorError no name defined');
-  if (Facept = nil)and(Frefuse = nil)and(Fcomplain = nil)then raise Exception.Create('TActorError not choices defined, at last one is required');
-  if (Facept <> nil)and (Facept = fcomplain) then raise Exception.Create('TActorError acept and refuse must be diferent');
+  if (Facept = nil)and(Frefuse = nil)and(Fcompliance = nil)then raise Exception.Create('TActorError not choices defined, at last one is required');
+  if (Facept <> nil)and (Facept = fcompliance) then raise Exception.Create('TActorError acept and refuse must be diferent');
   if Apool = nil then
   begin
     raise Exception.create('TActorError not pool defined');
   end
   else pool:=Apool;
+end;
+
+constructor TActor.create(AjsonOBJ: TJSONObject;Apool:TList);
+begin
+  FjsonOBJ:=AjsonOBJ;
+  Fname:=AjsonOBJ.Items[0].AsString;
+  Fpool:=Apool;
 end;
 
 function TActor.choose(TendencyOptions: TChoiceOptions): Tstatus;
@@ -197,17 +259,17 @@ begin
       Fchoice:=Facept;
       Fstatus:=stAcept;
     end else
-    begin
-      if Assigned(complain) then
+    begin //acept null
+      if Assigned(compliance) then
       begin
-        Facept:=TActor.Create(self,complain,refuse,pool,'acept-'+name);;
+        Facept:=TActor.Create(self,compliance,refuse,pool,'acept-'+name);;
         Fchoice:=acept;
         Fstatus:=stAcept;
       end else
-      begin
-        Fcomplain:=TActor.Create(acept,self,refuse,pool,'complain-'+name);
-        Fstatus:=stcomplain;
-        Fchoice:=Fcomplain;
+      begin//compliance acept null
+        Fcompliance:=TActor.Create(acept,self,refuse,pool,'compliance-'+name);
+        Fstatus:=stcompliance;
+        Fchoice:=Fcompliance;
       end;
     end ;
   end
@@ -219,14 +281,14 @@ begin
       Fchoice:=Frefuse;
       Fstatus:=stRefuse;
     end else
-    begin
+    begin//refuse null
       if Assigned(Facept) then
       begin
         Fchoice:=Facept;
         Fstatus:=stAcept;
       end else
-      begin
-        Facept:=TActor.Create(complain,self,refuse,pool,'acept-'+name);
+      begin//acept refuse null
+        Facept:=TActor.Create(compliance,self,refuse,pool,'acept-'+name);
         Fchoice:=acept;
         Fstatus:=stAcept;
       end;
@@ -235,32 +297,32 @@ begin
   else
   if loConsonant in TendencyOptions then
   begin
-    if complain = nil then
+    if compliance = nil then
     begin
-      Fcomplain:= TActor.Create(acept,self,refuse,pool,'Complain-'+name);
-      pool.Add(pointer(Fcomplain));
-      Fchoice:=Fcomplain;
-      Fstatus:= stcomplain;
+      Fcompliance:= TActor.Create(acept,self,refuse,pool,'compliance-'+name);
+      pool.Add(pointer(Fcompliance));
+      Fchoice:=Fcompliance;
+      Fstatus:= stcompliance;
     end else
     begin
-      Fchoice:=Fcomplain;
-      Fstatus:=stcomplain;
+      Fchoice:=Fcompliance;
+      Fstatus:=stcompliance;
     end;
   end
   else
   begin // no mood
-    if Assigned(complain) then
+    if Assigned(compliance) then
     begin
-      Fchoice:=Fcomplain;
-      Fstatus:=stcomplain;
+      Fchoice:=Fcompliance;
+      Fstatus:=stcompliance;
     end else
-    begin
+    begin //compliance null
       if Assigned(Facept) then
       begin
         Fchoice:=Facept;
         Fstatus:=stAcept;
       end else
-      begin
+      begin //compliance acept null
       Fchoice:= Frefuse;
       Fstatus:= stRefuse;
       end;
