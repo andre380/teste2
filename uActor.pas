@@ -5,42 +5,13 @@ unit uActor;
 interface
 
 uses
-  Classes, SysUtils, fpjson, jsonparser, jsonConf;
+  Classes, SysUtils, fpjson_1, jsonparser1, jsonConf;
 type
 
   TChoiceOption = (loDissonant, loConsonant);
   TChoiceOptions = set of TChoiceOption;
   Tstatus = (stNone,stAcept,stRefuse,stcompliance);
-
-  { TActor }
-  TActor = class
-  protected
-    FjsonOBJ: TJSONObject;
-    Facept: TActor;
-    Fcompliance: TActor;
-    Fname: string;
-    Fpool: TList;
-    Frefuse: TActor;
-    Fchoice: TActor;
-    Fstatus: Tstatus;
-    function getjsonOBJ: TJSONObject;
-    procedure Setname(AValue: string);
-    procedure Setpool(AValue: TList);
-  public
-    constructor Create( Aacept, Acompliance, Arefuse: TActor;Apool:TList;name:string);
-    constructor create(AjsonOBJ:TJSONObject;Apool:TList);
-    function choose(TendencyOptions:TChoiceOptions):Tstatus;
-
-  published
-    property name :string read Fname write Setname ;
-    property pool:TList read Fpool write Setpool;
-    property acept : TActor read Facept ;
-    property refuse : TActor read Frefuse ;
-    property compliance : TActor read Fcompliance ;
-    property choice  : TActor read Fchoice;
-    property status : Tstatus read Fstatus;
-    property jsonOBJ:TJSONObject read getjsonOBJ;
- end;
+  TActor = class;
 
   { Tpool }
 
@@ -58,6 +29,38 @@ type
     constructor create(aName:string);
   end;
 
+
+  { TActor }
+  TActor = class
+  protected
+    FjsonOBJ: TJSONObject;
+    Facept: TActor;
+    Fcompliance: TActor;
+    Fname: string;
+    Fpool: Tpool;
+    Frefuse: TActor;
+    Fchoice: TActor;
+    Fstatus: Tstatus;
+    function getjsonOBJ: TJSONObject;
+    procedure Setname(AValue: string);
+    procedure Setpool(AValue: Tpool);
+  public
+    constructor Create( Aacept, Acompliance, Arefuse: TActor;Apool:Tpool;name:string);
+    constructor create(AjsonOBJ:TJSONObject;Apool:Tpool);
+    function choose(TendencyOptions:TChoiceOptions):Tstatus;
+
+  published
+    property name :string read Fname write Setname ;
+    property pool:Tpool read Fpool write Setpool;
+    property acept : TActor read Facept ;
+    property refuse : TActor read Frefuse ;
+    property compliance : TActor read Fcompliance ;
+    property choice  : TActor read Fchoice;
+    property status : Tstatus read Fstatus;
+    property jsonOBJ:TJSONObject read getjsonOBJ;
+ end;
+
+
   { Tpools }
 
   Tpools= class(TList)
@@ -69,9 +72,12 @@ type
     function addnew(aName:string):Tpool;
   end;
 
+  { Tjasonidentado }
+
 
 
 implementation
+
 
 { Tpools }
 
@@ -120,15 +126,18 @@ begin
   nome:=self.name;
   TJSONObject(FRoot.Items[0]).Add(nome,TJSONObject.create);
   jpool:=TJSONObject(FRoot.Items[0].Items[0]);
+  S:='';
   for cont:=0 to self.Count-1 do
   begin
     objeto:=self.Items[cont];
     jpool.Add(IntToStr(cont),objeto.jsonOBJ);
+    //S:=S+'    '+self.items[cont].jsonOBJ.AsjsonIdent('   ')+#13;
   end;
   F:=TFileStream.Create(FileName,fmCreate);
   try
     If Assigned(FRoot) then
-      S:=FRoot.AsJSON;
+      S:=FRoot.AsjsonIdent;
+      //S:=FRoot.Items[0].AsjsonIdent();
       FRoot.Free;
     If length(S)>0 then
       F.WriteBuffer(S[1],Length(S));
@@ -184,12 +193,10 @@ end;
 
 { TActor }
 
-procedure TActor.Setpool(AValue: TList);
+procedure TActor.Setpool(AValue: Tpool);
 begin
   if Fpool=AValue then Exit;
-  if AValue.ClassNameIs('Tpool') then
     Fpool:=AValue
-  else raise Exception.create('Invalid class for pool. Tpool is required');
 end;
 
 function TActor.getjsonOBJ: TJSONObject;
@@ -225,7 +232,7 @@ begin
     Fname:=AValue;
 end;
 
-constructor TActor.Create(Aacept, Acompliance, Arefuse: TActor;Apool:TList;name:string);
+constructor TActor.Create(Aacept, Acompliance, Arefuse: TActor;Apool:Tpool;name:string);
 begin
   Facept:= Aacept;
   Fcompliance:= Acompliance;
@@ -242,7 +249,7 @@ begin
   else pool:=Apool;
 end;
 
-constructor TActor.create(AjsonOBJ: TJSONObject;Apool:TList);
+constructor TActor.create(AjsonOBJ: TJSONObject;Apool:Tpool);
 begin
   FjsonOBJ:=AjsonOBJ;
   Fname:=AjsonOBJ.Items[0].AsString;
@@ -300,7 +307,7 @@ begin
     if compliance = nil then
     begin
       Fcompliance:= TActor.Create(acept,self,refuse,pool,'compliance-'+name);
-      pool.Add(pointer(Fcompliance));
+      pool.Add(Fcompliance);
       Fchoice:=Fcompliance;
       Fstatus:= stcompliance;
     end else

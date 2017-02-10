@@ -31,7 +31,7 @@ implementation
 
 {$R *.lfm}
 
-uses uActor,fpjson;
+uses uActor,fpjson_1, jsonparser1;
 { TForm1 }
 
 procedure TForm1.Button1Click(Sender: TObject);
@@ -44,28 +44,56 @@ var
 begin
   pool:=Tpool.Create('direita');
     json1:=TJSONObject.Create;
-    json1.Add('name','aaaa');
+    json1.Add('name','teste A');
     json1.Add('pool','direita');
     json1.Add('acept',TJSONObject.Create(['name','aaaa','pool','direita']));
 
   pool.add(TActor.Create(json1,pool));
-  pool.add(TActor.Create(pool.Items[0],nil,nil,pool,'testea'));
-  pool.add(TActor.Create(pool.Items[0],nil,nil,pool,'testeb'));
-  for cont := 0 to 5 do
-  begin
-    pool.add(TActor.Create(pool.Items[pool.Count-1],
-                           pool.Items[pool.Count-2],
-                           pool.Items[pool.Count-3],pool,'teste'+IntToStr(cont)));
-  end;
+  pool.add(TActor.Create(pool.Items[0],nil,nil,pool,'teste B'));
+  pool.add(TActor.Create(pool.Items[0],nil,nil,pool,'teste C'));
+  //for cont := 0 to 50000 do
+  //begin
+  //  pool.add(TActor.Create(pool.Items[pool.Count-1],
+  //                         pool.Items[pool.Count-2],
+  //                         pool.Items[pool.Count-3],
+  //                         pool,'teste'+IntToStr(cont)));
+  //end;
   if SaveDialog1.Execute then
   pool.SaveToFile(SaveDialog1.FileName);
+  pool.Free;
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
+Var
+  F : TFileStream;
+  P : TJSONParser;
+  Root, jpool: TJSONData;
+  cont: Integer;
+  S:string;
 begin
-  if OpenDialog1.Execute then
+  if OpenDialog1.execute then
   begin
-    //tjs
+    F:=TFileStream.Create(OpenDialog1.FileName,fmOpenRead);
+    try
+      P:=TJSONParser.Create(F);
+      try
+        P.Strict:=true;
+        Root:=P.Parse;
+      finally
+        P.Free;
+      end;
+    finally
+      F.Free;
+    end;
+    S:=Root.AsjsonIdent();
+   if SaveDialog1.Execute then
+   begin
+     F:=TFileStream.Create(SaveDialog1.FileName,fmCreate);
+     If length(S)>0 then
+      F.WriteBuffer(S[1],Length(S));
+     F.Free;
+   end;
+   root.Free;
   end;
 end;
 

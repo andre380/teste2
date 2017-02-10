@@ -1,11 +1,11 @@
 object Form1: TForm1
-  Left = 370
-  Height = 240
-  Top = 199
-  Width = 320
-  Caption = 'Form1'
-  ClientHeight = 240
-  ClientWidth = 320
+  Left = 496
+  Height = 144
+  Top = 231
+  Width = 262
+  Caption = 'Identar Json'
+  ClientHeight = 144
+  ClientWidth = 262
   LCLVersion = '1.6.0.4'
   object Button1: TButton
     Left = 152
@@ -17,11 +17,11 @@ object Form1: TForm1
     TabOrder = 0
   end
   object Button2: TButton
-    Left = 152
-    Height = 25
-    Top = 128
-    Width = 75
-    Caption = 'Button2'
+    Left = 72
+    Height = 40
+    Top = 48
+    Width = 115
+    Caption = 'Identar Json'
     OnClick = Button2Click
     TabOrder = 1
   end
