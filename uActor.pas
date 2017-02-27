@@ -5,7 +5,7 @@ unit uActor;
 interface
 
 uses
-  Classes, SysUtils, fpjson_1, jsonparser1, jsonConf;
+  Classes, SysUtils, fpjson_1, jsonparser1, jsonConf,contnrs;
 type
 
   TChoiceOption = (loDissonant, loConsonant);
@@ -15,7 +15,7 @@ type
 
   { Tpool }
 
-  Tpool = class(TList)
+  Tpool = class(TList)//(TObjectList)
   private
     Fname: string;
     function GetItems(Index: integer): TActor;
@@ -27,6 +27,7 @@ type
     property Items[Index: integer]: TActor read GetItems write SetItems;
     function add(item:TActor):integer;
     constructor create(aName:string);
+    destructor destroy;override;
   end;
 
 
@@ -70,6 +71,7 @@ type
   public
     property Items[Index: integer]: Tpool read GetItems write SetItems;
     function addnew(aName:string):Tpool;
+    destructor destroy;override;
   end;
 
   { Tjasonidentado }
@@ -97,6 +99,15 @@ begin
   Inherited add(Result);
 end;
 
+destructor Tpools.destroy;
+var
+  cont: Integer;
+begin
+  for cont:= 0 to self.Count-1 do
+    self.Items[cont].Free;
+  inherited destroy;
+end;
+
 { Tpool }
 
 function Tpool.GetItems(Index: integer): TActor;
@@ -106,7 +117,7 @@ end;
 
 procedure Tpool.SetItems(Index: integer; AValue: TActor);
 begin
-  inherited Items[Index]:=Pointer(AValue);
+  inherited Items[Index]:=(AValue);
 end;
 
 
@@ -182,13 +193,23 @@ end;
 
 function Tpool.add(item: TActor): integer;
 begin
-  inherited add(pointer(item));
+  inherited add((item));
 end;
 
 constructor Tpool.create(aName:string);
 begin
   inherited create;
   self.Fname:=aName;
+end;
+
+destructor Tpool.destroy;
+var
+  cont: Integer;
+begin
+ // temp.Clear;
+  for cont:= 0 to self.Count-1 do
+    self.Items[cont].free;
+ inherited Destroy;
 end;
 
 { TActor }
