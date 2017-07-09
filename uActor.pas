@@ -17,7 +17,10 @@ type
 
   Tpool = class(TList)//(TObjectList)
   private
+    dissonantvalue:integer;
+    consonantvalue:integer;
     Fname: string;
+    Ftendency: TChoiceOptions;
     function GetItems(Index: integer): TActor;
     procedure SetItems(Index: integer; AValue: TActor);
   public
@@ -25,6 +28,8 @@ type
     function SaveToFile(FileName: string):Boolean;
     function LoadFromFile(AFilename:string):Boolean;
     property Items[Index: integer]: TActor read GetItems write SetItems;
+    property tendency:TChoiceOptions read Ftendency;
+    procedure adjustTendency(status:tstatus);
     function add(item:TActor):integer;
     constructor create(aName:string);
     destructor destroy;override;
@@ -122,6 +127,8 @@ end;
 
 
 
+
+
 function Tpool.SaveToFile(FileName: string): Boolean;
 var
   //FRoot:TJSONObject;
@@ -191,6 +198,42 @@ begin
   end;
 end;
 
+procedure Tpool.adjustTendency(status: tstatus);
+begin
+  if (loConsonant in Ftendency) and ( loDissonant in Ftendency) then
+  begin
+    case status of
+    stAcept     : inc(consonantvalue);
+    //stRefuse    : inc(consonantvalue);// no refuse relevant
+    stcompliance: inc(dissonantvalue);
+    end;
+  end else
+  if loDissonant in Ftendency then
+  begin
+    case status of
+    stAcept     : inc(consonantvalue);
+    stRefuse    : inc(dissonantvalue);
+    //stcompliance: inc(consonantvalue); no comliance relevant
+    end;
+  end else
+  if loConsonant in Ftendency then
+  begin
+    case status of
+    stAcept     : inc(dissonantvalue);
+    stRefuse    : inc(dissonantvalue);
+    stcompliance: inc(consonantvalue);
+    end;
+  end
+  else
+  begin
+    case status of
+    stAcept     : inc(dissonantvalue);
+    stRefuse    : inc(dissonantvalue);
+    stcompliance: inc(consonantvalue);
+    end;
+  end;
+end;
+
 function Tpool.add(item: TActor): integer;
 begin
   inherited add((item));
@@ -200,6 +243,8 @@ constructor Tpool.create(aName:string);
 begin
   inherited create;
   self.Fname:=aName;
+  dissonantvalue:=0;
+  consonantvalue:=0;
 end;
 
 destructor Tpool.destroy;

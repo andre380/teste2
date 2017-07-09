@@ -34,8 +34,6 @@ type
     { public declarations }
     indice:integer;
     pool:Tpool;
-    lista:Tlista;
-    listas: array[0..10] of Tlista;
   end;
 
 var
@@ -64,11 +62,6 @@ begin
     json1.Add('pool','direita');
     json1.Add('acept',TJSONObject.Create(['name','aaaa','pool','direita']));
 
-  lista.add(TActor.Create(json1,pool));
-  lista.add(TActor.Create(lista.itens[0],nil,nil,pool,'teste B'));
-  lista.add(TActor.Create(lista.itens[0],nil,nil,pool,'teste C'));
-  //lista.add(TActor.Create(pool.Items[pool.count-1],nil,nil,pool,'teste B'));
-  //lista.add(TActor.Create(pool.Items[pool.count-1],nil,nil,pool,'teste C'));
   json1.free;
   try
   time2:=now;
@@ -79,10 +72,6 @@ begin
     //                       pool.Items[pool.Count-2],
     //                       pool.Items[pool.Count-3],
     //                       pool,'teste'+IntToStr(cont)));
-    actor:=(TActor.Create(lista.itens[1],
-                           lista.itens[2],
-                           lista.itens[2],
-                           pool,'teste'+IntToStr(cont)));
     if now > IncSecond(time2) then
     begin
     time2:=now;
@@ -109,10 +98,10 @@ var
   json1: TJSONObject;
 begin
 
-  //for cont3:=0 to 20 do
+  for cont3:=0 to 20 do
   begin
   pools:=Tpools.Create;
-  for cont := 0 to 1 do
+  for cont := 0 to 8 do
   begin
     pool1:=pools.addnew('lista'+IntToStr(cont));
     json1:=TJSONObject.Create;
@@ -129,9 +118,11 @@ begin
                               pool1.Items[cont2-2],
                               pool1,'objeto'+IntToStr(cont2)));
     end;
-    pool1.SaveToFile(ExtractFileDir(ParamStr(0))+'\json\'+pool1.name+'.json');
   end;
+  for cont := 0 to 8 do
+    pools.Items[cont].SaveToFile(ExtractFileDir(ParamStr(0))+'\json\'+inttostr(cont3)+pools.Items[cont].name+'.json');
   Label2.Caption:=('apaga '+IntToStr(cont3));
+  Form1.Update;
   Sleep(2000);
   pools.free;
 
@@ -149,7 +140,6 @@ var
   cont: Integer;
 begin
   pool:=Tpool.Create('direita');
-  lista:=Tlista.Create;
   //for cont := 0 to 10 do
   //listas[cont]:=Tlista.Create;
 end;
