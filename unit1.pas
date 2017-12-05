@@ -103,12 +103,12 @@ begin
   pools:=Tpools.Create;
   for cont := 0 to 8 do
   begin
-    pool1:=pools.addnew('lista'+IntToStr(cont));
+    pool1:=pools.getPool('lista'+IntToStr(cont));
     json1:=TJSONObject.Create;
     json1.Add('name','objeto1');
     json1.Add('pool',pool1.name);
     json1.Add('acept',TJSONObject.Create(['name','aaaa','pool',pool.name]));
-    pool1.add(TActor.Create(json1,pool1));
+    pool1.add(TActor.Create(json1,pools));
     pool1.add(TActor.Create(pool1.Items[0],nil,nil,pool1,'objeto2'));
     pool1.add(TActor.Create(pool1.Items[0],nil,nil,pool1,'objeto3'));
     for cont2:= 4 to 100000 do
